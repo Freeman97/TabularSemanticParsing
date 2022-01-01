@@ -168,7 +168,7 @@ def load_schema_graphs_spider(data_dir, dataset_name, db_dir=None, augment_with_
         for db_content in content:
             db_id = db_content['db_id']
             if dataset_name == 'spider':
-                db_path = os.path.join(db_dir, db_id, '{}.sqlite'.format(db_id)) if db_dir else None
+                db_path = os.path.join(db_dir, db_id, '{}.sqlite'.format(db_id)) if db_dir else None # TODO: 都不存在sqlite文件，后续需要修改成JSON查找操作
             else:
                 db_id_parts = db_id.rsplit('_', 1)
                 if len(db_id_parts) > 1:

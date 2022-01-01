@@ -30,10 +30,10 @@ def get_tokenizers(args):
         transformer_utils = utils.get_trans_utils(args)
         text_tokenize = transformer_utils.tokenizer.tokenize
         def p_tokenize(sql, **kwargs):
-            return sql_tokenize(sql, text_tokenize, **kwargs)
+            return sql_tokenize(sql, text_tokenize, **kwargs) # TODO: SQL的tokenizer可能需要替换
         program_tokenize = p_tokenize
         def p_detokenize(tokens, **kwargs):
-            return trans_de_tokenize(tokens, transformer_utils, **kwargs)
+            return trans_de_tokenize(tokens, transformer_utils, **kwargs) # TODO: SQL的de-tokenizer需要替换
         post_process = p_detokenize
     return text_tokenize, program_tokenize, post_process, transformer_utils
 
@@ -42,7 +42,7 @@ def sql_tokenize(sql, value_tokenize, return_token_types=False, **kwargs):
     if isinstance(sql, string_types):
         sql = standardise_blank_spaces(sql)
         try:
-            ast = moz_sp.parse(sql)
+            ast = moz_sp.parse(sql) # 此处也有msp.parse..
         except Exception:
             return value_tokenize(sql)
     else:

@@ -97,7 +97,7 @@ def get_ast(program, parsed_programs=None, denormalize_sql=False, schema_graph=N
     ast = parsed_programs.get(program, None) if parsed_programs else None
     if ast is None:
         try:
-            ast = parse(program)
+            ast = parse(program) # TODO: 此处要使用MSP parser...IUE类型需要进行特殊处理
             print('SQL query parsed: {}'.format(program))
             parsed_programs[program] = ast
         except Exception:

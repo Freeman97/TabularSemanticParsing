@@ -181,7 +181,7 @@ class SchemaGraphs(object):
 
     def index_schema_graph(self, schema_graph):
         db_id = len(self.db_index)
-        assert(schema_graph.name not in self.db_index)
+        assert(schema_graph.name not in self.db_index) # TODO: DuSQL数据集有DB重复
         self.db_index[schema_graph.name] = db_id
         self.db_rev_index[db_id] = schema_graph
 
@@ -384,7 +384,7 @@ class SchemaGraph(object):
             for i in field_po[table_id]:
                 field_node = table_node.fields[i]
                 if use_typed_field_markers:
-                    if field_node.data_type == 'text':
+                    if field_node.data_type == 'text': # TODO: 可能需要扩展类型标识符
                         table_features.append(tu.text_field_marker)
                     elif field_node.data_type == 'number':
                         table_features.append(tu.number_field_marker)
@@ -613,7 +613,7 @@ class SchemaGraph(object):
             field_node = self.get_field(field_id)
             field_name = field_node.name
             table_name = field_node.table.name
-            fetch_sql = 'SELECT `{}` FROM `{}`'.format(field_name, table_name)
+            fetch_sql = 'SELECT `{}` FROM `{}`'.format(field_name, table_name) # TODO: 修改为JSON查找
             conn = sqlite3.connect(self.db_path)
             conn.text_factory = bytes
             c = conn.cursor()
@@ -692,10 +692,10 @@ class SchemaGraph(object):
         table_normalized_names = in_json['table_names']
         field_normalized_names = in_json['column_names']
         field_types = in_json['column_types']
-        assert (len(field_names) == len(field_types))
+        assert (len(field_names) == len(field_types)) # TODO: TableQA数据集不一定能满足这一点
         primary_keys = set(in_json['primary_keys'])
         if in_json['foreign_keys']:
-            foreign_keys = set(functools.reduce(lambda x,y: x+y, [list(t) for t in in_json['foreign_keys']]))
+            foreign_keys = set(functools.reduce(lambda x,y: x+y, [list(t) for t in in_json['foreign_keys']])) # 所有的外键进行展开
         else:
             foreign_keys = []
 

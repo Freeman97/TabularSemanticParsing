@@ -64,10 +64,10 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
             text_tokens = text_tokenize(example.text, functional_tokens)
             text_features = [t.lower() for t in text_tokens]
         example.text_tokens = text_features
-        example.text_ptr_values = text_tokens
+        example.text_ptr_values = text_tokens # 去掉## 符号之后的token -> 指针的值
         example.text_token_starts = token_starts
         example.text_token_ends = token_ends
-        example.text_ids = vec.vectorize(text_features, text_vocab)
+        example.text_ids = vec.vectorize(text_features, text_vocab) # 得到ID序列
         example.text_ptr_input_ids = vec.vectorize(text_features, text_vocab)
         program_list = example.program_list
     else:
@@ -86,14 +86,14 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
             use_typed_field_markers=args.use_typed_field_markers, use_graph_encoding=args.use_graph_encoding,
             question_encoding=question_encoding, top_k_matches=args.top_k_picklist_matches,
             match_threshold=args.anchor_text_match_threshold, num_values_per_field=args.num_values_per_field,
-            no_anchor_text=args.no_anchor_text)
+            no_anchor_text=args.no_anchor_text) # 此处完成问题的序列化
         example.matched_values = matched_values
         example.input_tokens, example.input_ptr_values, num_excluded_tables, num_excluded_fields = \
-            get_table_aware_transformer_encoder_inputs(text_tokens, text_features, schema_features, trans_utils)
+            get_table_aware_transformer_encoder_inputs(text_tokens, text_features, schema_features, trans_utils) # 增加控制符
         schema_truncated = (num_excluded_fields > 0)
         num_included_nodes = schema_graph.get_num_perceived_nodes(table_po) + 1 - num_excluded_tables - num_excluded_fields
-        example.ptr_input_ids = vec.vectorize(example.input_tokens, text_vocab)
-        if args.read_picklist:
+        example.ptr_input_ids = vec.vectorize(example.input_tokens, text_vocab) # 序列化后的输入转换为ID
+        if args.read_picklist: # Read Picklist可能需要设置为True
             example.transformer_output_value_mask, value_features, value_tokens = \
                 get_transformer_output_value_mask(example.input_tokens, matched_values, tu)
         example.primary_key_ids = schema_graph.get_primary_key_ids(num_included_nodes, table_po=table_po, field_po=field_po)
@@ -122,13 +122,13 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
     if not args.leaderboard_submission:
         for j, program in enumerate(program_list):
             if isinstance(example, Text2SQLExample):
-                ast, denormalized = get_ast(program, parsed_programs, args.denormalize_sql, schema_graph)
+                ast, denormalized = get_ast(program, parsed_programs, args.denormalize_sql, schema_graph) # 此处将SQL去除别名，所有列名增加表名
                 if ast:
                     example.program_ast_list.append(ast)
                     program_tokens = program_tokenize(ast, schema=schema_graph,
                                                       omit_from_clause=args.omit_from_clause,
                                                       no_join_condition=args.no_join_condition,
-                                                      in_execution_order=args.process_sql_in_execution_order)
+                                                      in_execution_order=args.process_sql_in_execution_order) # 给出按执行顺序的SQL token
                     assert(len(program_tokens) > 0)
                 else:
                     program_tokens = ['from']

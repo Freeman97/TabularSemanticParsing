@@ -181,7 +181,7 @@ def load_data_split_spider(in_dir, split, schema_graphs, aug_tag='', augment_wit
             if split == 'train':
                 num_train_exps_by_db[db_name] += 1
             exp = Text2SQLExample(SPIDER, db_name, db_id=schema_graphs.get_db_id(db_name))
-            text = example['question'].replace('’', '\'')
+            text = example['question'].replace('’', '\'') # TODO: 危险操作，中文语境下大量全角字符
             program = example['query']
             if program.endswith(';'):
                 program = program[:-1].rstrip()
@@ -194,7 +194,7 @@ def load_data_split_spider(in_dir, split, schema_graphs, aug_tag='', augment_wit
             program_tokens = example['query_toks'] if 'query_toks' in example else None
             if program_tokens and program_tokens[-1] == ';':
                 program_tokens = program_tokens[:len(program_tokens)-1]
-            exp.add_program_official(program, program_ast, program_tokens)
+            exp.add_program_official(program, program_ast, program_tokens) # TODO: program "LIST"? 
             if 'tables' in example:
                 gt_tables = example['tables']
                 gt_table_names = example['table_names']
