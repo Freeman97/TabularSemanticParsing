@@ -33,6 +33,9 @@ import argparse
 
 from src.eval.spider.process_sql import tokenize, get_schema, get_tables_with_alias, get_table_recur, Schema, get_sql
 
+from src.eval.dusql.dusql_evaluation import evaluate_complex_single
+from src.eval.dusql.dusql_evaluation import evaluate_NL2SQL_single
+
 
 # Flag to disable value evaluation
 DISABLE_VALUE = True
@@ -616,7 +619,7 @@ def evaluate(gold, predict, db_dir, etype, kmaps, in_execution_order=False, verb
 
 
 def evaluate_single_query_with_multiple_ground_truths(p, g_list, hardness=None, evaluator=None, scores=None,
-                                                      in_execution_order=False, verbose=False):
+                                                      in_execution_order=False, verbose=False, table_file=None, db_id=None):
     results = None
     for g in g_list:
         results = evaluate_single_query(p, g,
@@ -624,10 +627,36 @@ def evaluate_single_query_with_multiple_ground_truths(p, g_list, hardness=None, 
                                         evaluator=evaluator,
                                         scores=scores,
                                         in_execution_order=in_execution_order,
-                                        verbose=verbose)[0]
+                                        verbose=verbose)[0] # TODO: 修改此处的评估代码
         if results['exact'] == 1:
             return True, results['hardness'], results['table_err']
     return False, results['hardness'], results['table_err']
+
+
+
+def evaluate_single_dusql_cspider(p, g_list, hardness=None, evaluator=None, scores=None, in_execution_order=False, verbose=False, table_file=None, db_id=None):
+    results = None
+    for g in g_list:
+        results = evaluate_complex_single(p, g[0].replace('`', ''), table_file, db_id) # TODO: 尝试计算其它EVAL指标
+        if results == 1:
+            # 不进行分类, 不返回其它结果
+            return True, 'extra', 0
+    return False, 'extra', 0
+
+table_dict = None
+def evaluate_single_NL2SQL(p, g_list, hardness=None, evaluator=None, scores=None, in_execution_order=False, verbose=False, table_file=None, db_id=None):
+    if table_dict is None:
+        with open(table_file, 'r', encoding='utf8') as f:
+            table_list = json.load(f)
+            table_dict = {}
+            for t in table_list:
+                table_dict[t['db_id']] = t
+    
+    for g in g_list:
+        results = evaluate_NL2SQL_single(p, g[0], table_file, db_id) # TODO: 尝试计算其它EVAL指标，hardness和table_err(有一定困难)
+        if results == 1:
+            return True, 'extra', 0
+    return False, 'easy', 0
 
 
 def evaluate_single_query(p, g, hardness=None, evaluator=None, scores=None, in_execution_order=False, verbose=False):
@@ -639,7 +668,7 @@ def evaluate_single_query(p, g, hardness=None, evaluator=None, scores=None, in_e
         p_str = p
     g_str, db = g
     db_name = db
-    db = os.path.join(db_dir, db, db + ".sqlite")
+    db = os.path.join(db_dir, db, db + ".sqlite") # TODO: 改成JSON
     schema = Schema(get_schema(db))
     g_sql = get_sql(schema, g_str.replace('AS T0', '').replace('AS t0', '').replace('as T0', '').replace('as t0', ''))
     if hardness is None:

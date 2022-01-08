@@ -16,6 +16,7 @@ import src.eval.wikisql.evaluate as wikisql_eval_tools
 from src.data_processor.processor_utils import SPIDER
 from src.utils.utils import encode_str_list, list_to_hist
 
+import os
 
 def get_exact_set_match_metrics(examples, pred_list, verbose=False, vocabs=None, schema_graphs=None, clauses=None):
     assert(len(examples) == len(pred_list))
@@ -247,7 +248,7 @@ def orderless_match(x, y):
     return list_to_hist(x) == list_to_hist(y)
 
 
-def get_exact_match_metrics(examples, pred_list, in_execution_order=False, engine=None):
+def get_exact_match_metrics(examples, pred_list, in_execution_order=False, engine=None, dataset_name=None, data_dir=None):
     assert(len(examples) == len(pred_list))
 
     num_top_1_c, num_top_2_c, num_top_3_c, num_top_5_c, num_top_10_c = 0, 0, 0, 0, 0
@@ -267,7 +268,7 @@ def get_exact_match_metrics(examples, pred_list, in_execution_order=False, engin
 
             results = eval_prediction(pred, gt_program_list, example.dataset_id,
                                       db_name=example.db_name, in_execution_order=in_execution_order,
-                                      engine=engine)
+                                      engine=engine, dataset_name=dataset_name, dataset_dir=data_dir)
             if j == 0:
                 table_errs.append(results[-1])
 
@@ -339,11 +340,19 @@ def get_exact_match_metrics(examples, pred_list, in_execution_order=False, engin
     return metrics
 
 
-def eval_prediction(pred, gt_list, dataset_id, db_name=None, in_execution_order=False, engine=None):
+def eval_prediction(pred, gt_list, dataset_id, db_name=None, in_execution_order=False, engine=None, dataset_name=None, dataset_dir=None):
+    table_file = None
+    if dataset_dir is not None:
+        table_file = os.path.join(dataset_dir, 'db_schema.json')
     if dataset_id == SPIDER:
+        eval_func = spider_eval_tools.evaluate_single_query_with_multiple_ground_truths
+        if dataset_name == 'dusql' or dataset_name == 'cspider':
+            eval_func = spider_eval_tools.evaluate_single_dusql_cspider
+        elif dataset_name == 'nl2sql':
+            eval_func = spider_eval_tools.evaluate_NL2SQL_single
         try:
-            return spider_eval_tools.evaluate_single_query_with_multiple_ground_truths(
-                pred, [(gt, db_name) for gt in gt_list], in_execution_order=in_execution_order)
+            return eval_func(
+                pred, [(gt, db_name) for gt in gt_list], in_execution_order=in_execution_order, table_file=table_file, db_id=db_name) # TODO: eval代码替换成dusql
         except Exception as e:
             print(str(e))
             return False, 'easy', 0

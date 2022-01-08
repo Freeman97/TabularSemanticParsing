@@ -17,6 +17,8 @@ field_types.index_token('text')
 field_types.index_token('number')
 field_types.index_token('time')
 field_types.index_token('boolean')
+field_types.index_token('binary')
+field_types.index_token('real')
 field_types.index_token('others')
 
 

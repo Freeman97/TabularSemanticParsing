@@ -37,6 +37,10 @@ from moz_sp.sql_parser import SQLParser
 import moz_sp.sql_execution_order_parser as eo_parser
 from moz_sp.sql_tokenizer import Tokenizer
 
+from src.utils.generate_query_toks import tokenize_dusql
+
+from moz_sp.utils import contains_zh
+import logging
 
 parseLocker = Lock()  # ENSURE ONLY ONE PARSING AT A TIME
 
@@ -46,18 +50,49 @@ def parse(sql):
         try:
             all_exceptions.clear()
             sql = sql.rstrip().rstrip(";")
+            # 包含中文的SQL语句需要特殊处理
+            if contains_zh(sql):
+                sql = ' '.join(tokenize_dusql(sql, use_back_quote=True))
             parse_result = SQLParser.parseString(sql, parseAll=True)
             return _scrub(parse_result)
         except Exception as e:
-            if isinstance(e, ParseException) and e.msg == "Expected end of text":
-                problems = all_exceptions.get(e.loc, [])
-                expecting = [
-                    f
-                    for f in (set(p.msg.lstrip("Expected").strip() for p in problems)-{"Found unwanted token"})
-                    if not f.startswith("{")
-                ]
-                raise ParseException(sql, e.loc, "Expecting one of (" + (", ".join(expecting)) + ")")
-            raise e
+            set_op = ['except', 'union', 'intersect', 'EXCEPT', 'UNION', 'INTERSECT']
+            try:
+                for op in set_op:
+                    if op in sql:
+                        left, right = sql.split(op)
+                        left = left.strip()
+                        right = right.strip()
+                        if left.startswith('(') and left.endswith(')'):
+                            left = left[1:-1].strip()
+                        else:
+                            left = left.strip()
+
+                        if right.startswith('(') and right.endswith(')'):
+                            right = right[1:-1].strip()
+                        else:
+                            right = right.strip()
+                        left_ast = SQLParser.parseString(left, parseAll=True)
+                        left_ast = _scrub(left_ast)
+                        right_ast = SQLParser.parseString(right, parseAll=True)
+                        right_ast = _scrub(right_ast)
+                        ast = {
+                            op.lower(): [
+                                left_ast,
+                                right_ast
+                            ]
+                        }
+                        return _scrub(ast)
+            except Exception as e:
+                if isinstance(e, ParseException) and e.msg == "Expected end of text":
+                    problems = all_exceptions.get(e.loc, [])
+                    expecting = [
+                        f
+                        for f in (set(p.msg.lstrip("Expected").strip() for p in problems)-{"Found unwanted token"})
+                        if not f.startswith("{")
+                    ]
+                    raise ParseException(sql, e.loc, "Expecting one of (" + (", ".join(expecting)) + ")")
+                raise e
 
 
 def eo_parse(sql):
@@ -118,7 +153,7 @@ def check_schema_consistency(sql, schema, in_execution_order=False, verbose=True
             if in_execution_order:
                 ast = eo_parse(sql)
             else:
-                ast = parse(sql)
+                ast = parse(sql) # TODO: 修改parse方法
         except Exception as e:
             if verbose:
                 print(str(e))

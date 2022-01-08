@@ -298,7 +298,7 @@ def process_data():
     1. Build vocabulary.
     2. Vectorize data.
     """
-    if args.dataset_name == 'spider':
+    if args.dataset_name in ['spider', 'dusql', 'cspider', 'nl2sql']:
         dataset = data_loader.load_data_spider(args) # 暂时没有涉及DB值查找和对字符的重新拼接（英文和中文的拼接方式不一样，中文不带空格）
     elif args.dataset_name == 'wikisql':
         dataset = data_loader.load_data_wikisql(args)

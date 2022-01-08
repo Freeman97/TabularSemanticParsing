@@ -149,22 +149,22 @@ def load_data_spider(args):
     """
     in_dir = args.data_dir
     dataset = dict()
-    schema_graphs = load_schema_graphs_spider(in_dir, 'spider', augment_with_wikisql=args.augment_with_wikisql,
+    schema_graphs = load_schema_graphs_spider(in_dir, args.dataset_name, augment_with_wikisql=args.augment_with_wikisql,
                                               db_dir=args.db_dir)
     dataset['train'] = load_data_split_spider(in_dir, 'train', schema_graphs, get_data_augmentation_tag(args),
-                                              augment_with_wikisql=args.augment_with_wikisql)
+                                              augment_with_wikisql=args.augment_with_wikisql, dataset_name=args.dataset_name)
     dataset['dev'] = load_data_split_spider(in_dir, 'dev', schema_graphs,
-                                            augment_with_wikisql=args.augment_with_wikisql)
+                                            augment_with_wikisql=args.augment_with_wikisql, dataset_name=args.dataset_name)
     dataset['schema'] = schema_graphs
 
     fine_tune_set = load_data_split_spider(in_dir, 'fine-tune', schema_graphs,
-                                           augment_with_wikisql=args.augment_with_wikisql)
+                                           augment_with_wikisql=args.augment_with_wikisql, dataset_name=args.dataset_name)
     if fine_tune_set:
         dataset['fine-tune'] = fine_tune_set
     return dataset
 
 
-def load_data_split_spider(in_dir, split, schema_graphs, aug_tag='', augment_with_wikisql=False):
+def load_data_split_spider(in_dir, split, schema_graphs, aug_tag='', augment_with_wikisql=False, dataset_name='spider'):
     if split == 'train':
         in_json = os.path.join(in_dir, '{}.{}json'.format(split, aug_tag))
     else:
@@ -186,12 +186,12 @@ def load_data_split_spider(in_dir, split, schema_graphs, aug_tag='', augment_wit
             if program.endswith(';'):
                 program = program[:-1].rstrip()
             exp.text = text
-            if 'question_toks' in example:
+            if 'question_toks' in example: # TODO: 补充question_toks
                 text_tokens = example['question_toks']
                 exp.text_tokens = [t.lower() for t in text_tokens]
                 exp.text_ptr_values = text_tokens
             program_ast = example['sql'] if 'sql' in example else None
-            program_tokens = example['query_toks'] if 'query_toks' in example else None
+            program_tokens = example['query_toks'] if 'query_toks' in example else None # TODO: 补充query_toks
             if program_tokens and program_tokens[-1] == ';':
                 program_tokens = program_tokens[:len(program_tokens)-1]
             exp.add_program_official(program, program_ast, program_tokens) # TODO: program "LIST"? 

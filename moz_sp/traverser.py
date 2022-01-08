@@ -45,13 +45,15 @@ class SchemaGroundedTraverser(object):
         self.verbose = verbose
         self.noisy_schema_component_names = False
 
+    
+
     @debug_wrapper
     def is_field(self, s):
         if not isinstance(s, string_types):
             return False
         if is_number(s):
             return False
-        if re.fullmatch(utils.field_pattern, s):
+        if re.fullmatch(utils.field_pattern, s) or (utils.contains_zh(s) and '.' in s):
             table_name, field_name = s.split('.')
             if re.fullmatch(utils.alias_pattern, table_name):
                 table_name = self.get_table_name_by_alias(table_name)
@@ -64,7 +66,7 @@ class SchemaGroundedTraverser(object):
         assert(isinstance(s, string_types))
         if is_number(s):
             return False
-        assert(re.fullmatch(utils.field_pattern, s))
+        assert(re.fullmatch(utils.field_pattern, s) or utils.contains_zh(s))
         field_id = self.schema.get_field_id(s)
         field_node = self.schema.get_field(field_id)
         return field_node.is_numeric
@@ -126,7 +128,10 @@ class SchemaGroundedTraverser(object):
             value = item['value']
             table_alias = item.get('name', None)
             if utils.is_subquery(value):
-                alias2table[table_alias] = value
+                # alias2table[table_alias] = value 
+                # HACK: 由于数据集的复杂性有限，一般这种视图类型的别名会指代子查询中的一张表。出现别名代指子查询中的多张表的情况，考虑使用数组表示
+                assert 'from' in value and isinstance(value['from'], str)
+                alias2table[table_alias] = value['from']
             else:
                 table_name = value
                 item['is_table'] = True

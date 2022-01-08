@@ -181,7 +181,9 @@ class SchemaGraphs(object):
 
     def index_schema_graph(self, schema_graph):
         db_id = len(self.db_index)
-        assert(schema_graph.name not in self.db_index) # TODO: DuSQL数据集有DB重复
+        if schema_graph.name in self.db_index:
+            return
+        assert(schema_graph.name not in self.db_index)
         self.db_index[schema_graph.name] = db_id
         self.db_rev_index[db_id] = schema_graph
 
@@ -216,10 +218,11 @@ class SchemaGraph(object):
         5. FIELD_TYPE_REF (and reverse) -- connects a field with its data type.
     """
 
-    def __init__(self, name, db_path=None, caseless=True):
+    def __init__(self, name, db_path=None, caseless=True, db_content=None):
         self.id = None
         self.name = name
         self.db_path = db_path
+        self.db_content = db_content
 
         self.caseless = caseless
 
@@ -274,6 +277,10 @@ class SchemaGraph(object):
         return utils.to_indexable(name, self.caseless) in self.table_names
 
     def is_field_name(self, name):
+        if '.' in name:
+            table_name, column_name = name.split('.')
+            if self.is_table_name(table_name) and utils.to_indexable(column_name, self.caseless) in self.field_names:
+                return True
         return utils.to_indexable(name, self.caseless) in self.field_names
 
     def field_in_table(self, f_name, t_name):
@@ -443,6 +450,17 @@ class SchemaGraph(object):
                             print(row_values)
                         table_features.extend(tu.tokenizer.tokenize(row_value))
             bert_features.append(table_features)
+
+        # if 'dusql' in self.db_path:
+        #     for table_id in table_po:
+        #         table_node = self.table_rev_index[table_id]
+        #         for i in field_po[table_id]:
+        #             field_node = table_node.fields[i]
+        #             if field_node.indexable_name not in self.bert_feature_idx and schema_pos not in self.bert_feature_idx_rev:
+        #                 self.bert_feature_idx[field_node.indexable_name] = schema_pos
+        #                 self.bert_feature_idx_rev[schema_pos] = field_node
+        #                 schema_pos += 1
+
         if flatten_features:
             bert_features = [x for table_features in bert_features for x in table_features]
         return bert_features, matched_values
@@ -613,26 +631,36 @@ class SchemaGraph(object):
             field_node = self.get_field(field_id)
             field_name = field_node.name
             table_name = field_node.table.name
-            fetch_sql = 'SELECT `{}` FROM `{}`'.format(field_name, table_name) # TODO: 修改为JSON查找
-            conn = sqlite3.connect(self.db_path)
-            conn.text_factory = bytes
-            c = conn.cursor()
-            c.execute(fetch_sql)
-            picklist = set()
-            for x in c.fetchall():
-                if isinstance(x[0], str):
-                    picklist.add(x[0].encode('utf-8'))
-                elif isinstance(x[0], bytes):
-                    try:
-                        picklist.add(x[0].decode('utf-8'))
-                    except UnicodeDecodeError:
-                        picklist.add(x[0].decode('latin-1'))
-                else:
-                    picklist.add(x[0])
+            if self.db_path.endswith('.json'):
+                picklist = set()
+                assert self.db_content is not None
+                table_data = self.db_content[table_name]
+                list_index = table_data['header'].index(field_name)
+                value_list = []
+                for row in table_data['cell']:
+                    x = row[list_index]
+                    picklist.add(x)
+            else:
+                fetch_sql = 'SELECT `{}` FROM `{}`'.format(field_name, table_name) # TODO: 修改为JSON查找
+                conn = sqlite3.connect(self.db_path)
+                conn.text_factory = bytes
+                c = conn.cursor()
+                c.execute(fetch_sql)
+                picklist = set()
+                for x in c.fetchall():
+                    if isinstance(x[0], str):
+                        picklist.add(x[0].encode('utf-8'))
+                    elif isinstance(x[0], bytes):
+                        try:
+                            picklist.add(x[0].decode('utf-8'))
+                        except UnicodeDecodeError:
+                            picklist.add(x[0].decode('latin-1'))
+                    else:
+                        picklist.add(x[0])
+                conn.close()
             self.picklists[field_id] = list(picklist)
-            conn.close()
         return self.picklists[field_id]
-
+    # 暂时不需要改，没有用到
     def get_row(self, table_id, row_id=None, mask_fill=None):
         table_node = self.get_table(table_id)
         table_name = table_node.name
@@ -660,7 +688,7 @@ class SchemaGraph(object):
                 return row[0]
         else:
             return None
-
+    # 暂时没有用到，不用改
     def num_rows(self, table_id):
         table_node = self.get_table(table_id)
         if table_node.num_rows is None:
@@ -921,6 +949,16 @@ class SchemaGraph(object):
                 self.bert_feature_idx[field_node.indexable_signature] = schema_pos
                 self.bert_feature_idx_rev[schema_pos] = field_node
                 schema_pos += 1
+        
+        # 判断是否需要单独增加不带表名的列名
+        # if 'dusql' in self.db_path:
+        #     for table_id in range(self.num_tables):
+        #         for field_id in table_field_ids[table_id]:
+        #             field_node = self.field_rev_index[field_id]
+        #             if field_node.indexable_name not in self.bert_feature_idx and schema_pos not in self.bert_feature_idx_rev:
+        #                 self.bert_feature_idx[field_node.indexable_name] = schema_pos
+        #                 self.bert_feature_idx_rev[schema_pos] = field_node
+        #                 schema_pos += 1
 
         M = ssp.lil_matrix((self.num_nodes + 1, self.num_nodes + 1), dtype=np.int)
         table_field_ids = [table_field_ids[i] for i in table_field_ids.keys()]

@@ -95,7 +95,7 @@ def escape(identifier, value_tokenize, ansi_quotes, should_quote):
 
     ANSI uses single quotes, but many databases use back quotes.
     """
-    tokens = value_tokenize(strip_quotes(identifier))
+    tokens = value_tokenize(strip_quotes(identifier)) # TODO: 将a.X b.X的token进一步分解 X需要被标注为FIELD类型
     token_types = [VALUE for _ in tokens]
 
     if not should_quote(identifier):
@@ -228,11 +228,14 @@ class Tokenizer(SchemaGroundedTraverser):
             else:
                 return self.op(json)
     
+        # row_calc_alias = False
+        # if isinstance(json, string_types) and ('a.' in json or 'b.' in json):
+        #     row_calc_alias = True
         if not isinstance(json, string_types):
             json = text(json)
         if is_table and json.lower() == 't0':
             return self.value_tokenize(json), [RESERVED_TOKEN, RESERVED_TOKEN]
-        if self.keep_singleton_fields and (is_table or self.is_field(json) or json == '*'):
+        if self.keep_singleton_fields and (is_table or self.is_field(json)): 
             if is_table:
                 return [json], [TABLE]
             else:

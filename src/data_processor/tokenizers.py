@@ -395,7 +395,7 @@ def trans_de_tokenize(tokens, tu,
                       process_quote=True,
                       process_paratheses=True,
                       process_underscore=True,
-                      process_dash=True,
+                      process_dash=False,
                       process_unequal_sign=True):
     if process_unequal_sign:
         for i, token in enumerate(tokens):
@@ -410,10 +410,13 @@ def trans_de_tokenize(tokens, tu,
             if i % 2 == 0:
                 new_out += part
             else:
-                new_out += '"{}"'.format(part.strip())
+                # new_out += '"{}"'.format(part.strip())
+                # 中文下应该去掉所有空格
+                new_out += '"{}"'.format(''.join(part.split(" ")))
         out = new_out
 
         out = out.replace(" 's", "'s")
+        out = out.replace("as a", "a").replace("as b", "b")
 
         i = 0
         new_out = ''

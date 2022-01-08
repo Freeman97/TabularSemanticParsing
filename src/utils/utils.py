@@ -223,10 +223,10 @@ def get_sub_token_ids(question_tokens, span_ids, tu):
 
 
 def get_trans_utils(args):
-    if args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-uncased'):
+    if (args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-uncased')) or (args.pretrained_transformer.startswith('./bert-') and args.pretrained_transformer.endswith('-uncased')):
         import src.utils.trans.bert_utils as bu
         return bu
-    elif args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-cased'):
+    elif (args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-cased')) or ((args.pretrained_transformer.startswith('./bert-') and args.pretrained_transformer.endswith('-cased'))):
         import src.utils.trans.bert_cased_utils as bcu
         return bcu
     elif args.pretrained_transformer.startswith('roberta-'):
@@ -234,6 +234,9 @@ def get_trans_utils(args):
         return ru
     elif args.pretrained_transformer == 'null':
         return None
+    elif 'chinese-roberta' in args.pretrained_transformer:
+        import src.utils.trans.chinese_bert_utils as cbu
+        return cbu
     else:
         raise NotImplementedError
 

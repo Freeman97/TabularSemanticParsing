@@ -125,6 +125,8 @@ sql_reserved_tokens.index_token('where')
 sql_reserved_tokens.index_token('y')
 sql_reserved_tokens.index_token('year')
 sql_reserved_tokens.index_token('yes')
+sql_reserved_tokens.index_token('a')
+sql_reserved_tokens.index_token('b')
 
 
 sql_reserved_tokens_revtok = SQLVocabulary('sql_reserved_tokens_revtok', functional_token_index)

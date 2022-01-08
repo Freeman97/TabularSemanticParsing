@@ -14,6 +14,8 @@ from moz_sp import denormalize, parse
 from src.data_processor.vocab_utils import functional_token_index
 import src.utils.utils as utils
 
+import logging
+
 
 # Dataset
 WIKISQL = 0
@@ -33,7 +35,8 @@ def get_table_aware_transformer_encoder_inputs(text_tokens, text_features, schem
     """
     num_excluded_tables, num_excluded_fields = 0, 0
     num_separators = 3
-    max_schema_features_len = tu.tokenizer.max_len - num_separators - len(text_tokens)
+    # max_schema_features_len = tu.tokenizer.max_len - num_separators - len(text_tokens)
+    max_schema_features_len = 512 - num_separators - len(text_tokens) # TODO: 硬编码
     if len(schema_features) > max_schema_features_len:
         truncate_id = -1
         for i in range(len(schema_features)-1, -1, -1):
@@ -100,14 +103,15 @@ def get_ast(program, parsed_programs=None, denormalize_sql=False, schema_graph=N
             ast = parse(program) # TODO: 此处要使用MSP parser...IUE类型需要进行特殊处理
             print('SQL query parsed: {}'.format(program))
             parsed_programs[program] = ast
-        except Exception:
+        except Exception as e:
+            logging.exception(e)
             print('SQL query cannot be parsed: {}'.format(program))
     denormalized = False
     if denormalize_sql:
         if ast:
             try:
                 ast, _ = denormalize(copy.deepcopy(ast), schema_graph, return_parse_tree=True)
-            except Exception:
+            except Exception as e:
                 # TODO: Some Spider queries contain annotation errors and this is a quick fix.
                 return None, False
             denormalized = True

@@ -98,7 +98,7 @@ class EncoderDecoderLFramework(LFramework):
         else:
             decoder_input_ids, _ = formatted_batch[1]
             left_shift_targets = ops.left_shift_pad(decoder_input_ids, self.out_vocab.pad_id)
-        loss = self.loss_fun(outputs, left_shift_targets)
+        loss = self.loss_fun(outputs, left_shift_targets) # FIXME: targets出现了大于vocab size的id
         loss /= self.num_accumulation_steps
         return loss
 
@@ -185,8 +185,9 @@ class EncoderDecoderLFramework(LFramework):
                             gt_program_list = example.program_list
                             gt_program_ast = example.program_ast_list_[0] \
                                 if example.program_ast_list_ else example.program
-                            hardness = spider_eval_tools.Evaluator().eval_hardness(
-                                gt_program_ast, db_dir=self.args.db_dir, db_name=example.db_name)
+                            if not ('dusql' in self.args.db_dir or 'nl2sql' in self.args.db_dir or 'cspider' in self.args.db_dir):
+                                hardness = spider_eval_tools.Evaluator().eval_hardness(
+                                    gt_program_ast, db_dir=self.args.db_dir, db_name=example.db_name)
                         elif example.dataset_id == WIKISQL:
                             gt_program_list = example.program_ast_list_
                         else:
@@ -252,7 +253,10 @@ class EncoderDecoderLFramework(LFramework):
                                         dataset_id=example.dataset_id,
                                         db_name=example.db_name,
                                         in_execution_order=(self.args.process_sql_in_execution_order and
-                                                            not restore_clause_order))
+                                                            not restore_clause_order),
+                                        dataset_dir=self.args.data_dir,
+                                        dataset_name=self.args.dataset_name
+                                        )
                                     correct, _, _ = results
                                     exp_correct.append(correct)
                                     correct_ = correct[1] if isinstance(correct, tuple) else correct

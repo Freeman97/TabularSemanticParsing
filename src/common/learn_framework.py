@@ -236,14 +236,14 @@ class LFramework(nn.Module):
                 else:
                     pred_restored_cache = None
                 engine_path = os.path.join(self.args.data_dir, 'dev.db') if self.args.dataset_name == 'wikisql' else None
-                engine = DBEngine(engine_path) if engine_path else None
-
+                engine = DBEngine(engine_path) if engine_path else None # 只有wikisql下有用
+                # FIXME: dummy prediction
                 output_dict = self.inference(dev_data, restore_clause_order=self.args.process_sql_in_execution_order,
                                              pred_restored_cache=pred_restored_cache,
                                              check_schema_consistency_=self.args.sql_consistency_check,
-                                             engine=engine, inline_eval=True, verbose=False)
-                metrics = eval_tools.get_exact_match_metrics(dev_data, output_dict['pred_decoded'], engine=engine)
-                dev_metrics_history.append(metrics)
+                                             engine=engine, inline_eval=True, verbose=False) # 此处进行推理
+                metrics = eval_tools.get_exact_match_metrics(dev_data, output_dict['pred_decoded'], engine=engine, dataset_name=self.args.dataset_name, data_dir=self.args.data_dir)
+                dev_metrics_history.append(metrics) 
 
                 eval_metrics = metrics['top_1_ex'] if self.args.dataset_name == 'wikisql' else metrics['top_1_em']
                 wandb.log({'dev_exact_match/{}'.format(self.dataset): eval_metrics})

@@ -8,9 +8,10 @@ import re
 
 
 table_pattern = re.compile('[A-Za-z_]\w+|t')
-alias_pattern = re.compile('([A-Z_]+alias\d)|'
+alias_pattern = re.compile('([A-Za-z_]+alias\d)|'
                            '(T\d)|'
-                           '(t\d)')
+                           '(t\d)|'
+                           '([ab])')
 alias_id_pattern = re.compile('\d+')
 alias_id_revtok_pattern = re.compile('\d+ ')
 field_pattern = re.compile('([A-Z_]{1,100}alias\d+\.[A-Za-z_]\w+)|'
@@ -26,6 +27,11 @@ datetime_pattern = re.compile('(\d{4})-(\d{2})-(\d{2})( (\d{2}):(\d{2}):(\d{2}))
 DERIVED_TABLE_PREFIX = 'DERIVED_TABLE'
 DERIVED_FIELD_PREFIX = 'DERIVED_FIELD'
 
+def contains_zh(s):
+    for _char in s:
+        if '\u4e00' <= _char <= '\u9fa5':
+            return True
+    return False
 
 def is_derived_table(s):
     return s.startswith(DERIVED_TABLE_PREFIX)

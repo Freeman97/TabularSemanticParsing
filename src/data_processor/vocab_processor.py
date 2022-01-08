@@ -73,7 +73,7 @@ def build_vocab(args, dataset, schema_graphs):
             if i > 0 and i % 5000 == 0:
                 print('{} examples processed'.format(i))
 
-    if args.pretrained_transformer.startswith('bert') or args.pretrained_transformer == 'table-bert':
+    if args.pretrained_transformer.startswith('bert') or args.pretrained_transformer.startswith('./bert') or args.pretrained_transformer == 'table-bert':
         text_hist = dict()
         for v in tu.tokenizer.vocab:
             text_hist[v] = tu.tokenizer.vocab[v]

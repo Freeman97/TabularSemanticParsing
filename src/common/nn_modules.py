@@ -47,7 +47,9 @@ class TransformerHiddens(nn.Module):
     """
     def __init__(self, model, dropout=0.0, requires_grad=False):
         super().__init__()
-        if model.startswith('bert'):
+        if model.startswith('bert') or model.startswith('./bert'):
+            self.trans_parameters = BertModel.from_pretrained(model)
+        elif 'chinese-roberta-wwm-ext-large' in model:
             self.trans_parameters = BertModel.from_pretrained(model)
         elif model.startswith('roberta'):
             self.trans_parameters = RobertaModel.from_pretrained(model)

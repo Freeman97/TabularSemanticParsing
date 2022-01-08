@@ -142,7 +142,7 @@ def load_schema_graphs(args):
     Load database schema as a graph.
     """
     dataset_name = args.dataset_name
-    if dataset_name in ['spider', 'spider_ut']:
+    if dataset_name in ['spider', 'spider_ut', 'dusql', 'cspider', 'nl2sql']:
         return load_schema_graphs_spider(args.data_dir, dataset_name, db_dir=args.db_dir,
                                          augment_with_wikisql=args.augment_with_wikisql)
     if dataset_name == 'wikisql':
@@ -160,8 +160,21 @@ def load_schema_graphs_spider(data_dir, dataset_name, db_dir=None, augment_with_
     """
     Load indexed database schema.
     """
-    in_json = os.path.join(data_dir, 'tables.json')
+    if dataset_name != 'spider':
+        in_json = os.path.join(data_dir, 'db_schema.json')
+    else:
+        in_json = os.path.join(data_dir, 'tables.json')
     schema_graphs = SchemaGraphs()
+
+    # 构造DB content字典
+    content_dict = {}
+    if db_dir.endswith('.json'):
+        with open(db_dir, 'r') as f:
+            content_list = json.load(f)
+            for content in content_list:
+                if content['db_id'] not in content_dict:
+                    content_dict[content['db_id']] = content
+            
 
     with open(in_json) as f:
         content = json.load(f)
@@ -169,6 +182,8 @@ def load_schema_graphs_spider(data_dir, dataset_name, db_dir=None, augment_with_
             db_id = db_content['db_id']
             if dataset_name == 'spider':
                 db_path = os.path.join(db_dir, db_id, '{}.sqlite'.format(db_id)) if db_dir else None # TODO: 都不存在sqlite文件，后续需要修改成JSON查找操作
+            elif dataset_name in ['dusql', 'nl2sql', 'cspider']:
+                db_path = db_dir
             else:
                 db_id_parts = db_id.rsplit('_', 1)
                 if len(db_id_parts) > 1:
@@ -181,7 +196,10 @@ def load_schema_graphs_spider(data_dir, dataset_name, db_dir=None, augment_with_
                 else:
                     db_base_id = db_id_parts[0]
                 db_path = os.path.join(db_dir, db_base_id, '{}.sqlite'.format(db_base_id)) if db_dir else None
-            schema_graph = SchemaGraph(db_id, db_path)
+            if db_dir.endswith('.json'):
+                schema_graph = SchemaGraph(db_id, db_path, db_content=content_dict[db_id]['tables'])
+            else:
+                schema_graph = SchemaGraph(db_id, db_path)
             if db_dir is not None:
                 schema_graph.compute_field_picklist()
             schema_graph.load_data_from_spider_json(db_content)

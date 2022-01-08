@@ -32,7 +32,9 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
     program_vocab = vocabs['program']
 
     def get_memory_values(features, raw_text, args):
-        if args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-uncased'):
+        if (args.pretrained_transformer.startswith('bert-') and args.pretrained_transformer.endswith('-uncased')) or (args.pretrained_transformer.startswith('./bert-') and args.pretrained_transformer.endswith('-uncased')):
+            return utils.restore_feature_case(features, raw_text, tu)
+        elif 'chinese-roberta' in args.pretrained_transformer:
             return utils.restore_feature_case(features, raw_text, tu)
         else:
             return features
@@ -125,7 +127,7 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                 ast, denormalized = get_ast(program, parsed_programs, args.denormalize_sql, schema_graph) # 此处将SQL去除别名，所有列名增加表名
                 if ast:
                     example.program_ast_list.append(ast)
-                    program_tokens = program_tokenize(ast, schema=schema_graph,
+                    program_tokens = program_tokenize(ast, schema=schema_graph,  # TODO: 英文也需要escape(加引号)吗 -> 要
                                                       omit_from_clause=args.omit_from_clause,
                                                       no_join_condition=args.no_join_condition,
                                                       in_execution_order=args.process_sql_in_execution_order) # 给出按执行顺序的SQL token
@@ -133,7 +135,7 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                 else:
                     program_tokens = ['from']
                 program_tokens = [START_TOKEN] + program_tokens + [EOS_TOKEN]
-                program_input_ids = vec.vectorize(program_tokens, program_vocab)
+                program_input_ids = vec.vectorize(program_tokens, program_vocab) # TODO: UNK, 确认原本的数据集此处是否出现UNK -> 有
                 example.program_input_ids_list.append(program_input_ids)
                 if ast:
                     example.values = extract_values(ast, schema_graph)

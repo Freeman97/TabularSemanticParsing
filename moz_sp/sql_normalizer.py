@@ -116,9 +116,12 @@ class Denormalizer(SchemaGroundedTraverser):
     @debug_wrapper
     def remove_alias(self, s, is_field=False):
         if not utils.is_derived(s) and s != '*':
-            if utils.field_pattern.fullmatch(s):
+            if utils.field_pattern.fullmatch(s) or (utils.contains_zh(s) and '.' in s):
                 alias_str, field_name = s.split('.', 1)
                 table_name = self.get_table_name_by_alias(alias_str)
+                if table_name is None or not isinstance(table_name, str):
+                    # 没有办法消解别名，进行保留
+                    return s
                 if table_name is not None:
                     if not self.schema.field_in_table(field_name, table_name):
                         raise AssertionError('{} is not part of table {}'.format(field_name, table_name))

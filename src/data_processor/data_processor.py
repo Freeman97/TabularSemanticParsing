@@ -121,7 +121,7 @@ def preprocess_split(dataset, split, args, parsed_programs, text_tokenize, progr
 
     if args.dataset_name == 'wikisql':
         preprocess_example = data_processor_wikisql.preprocess_example
-    elif args.dataset_name == 'spider':
+    elif args.dataset_name in ['spider', 'dusql', 'nl2sql', 'cspider']:
         preprocess_example = data_processor_spider.preprocess_example
     else:
         raise NotImplementedError

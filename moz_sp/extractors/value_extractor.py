@@ -28,7 +28,7 @@ class ValueExtractor(SchemaGroundedTraverser):
                 if isinstance(v2, dict):
                     v2 = v2['literal']
                 if is_number(v2):
-                    return
+                    return # TODO: 为什么不抽取数字值?
                 if v1 != v2:
                     if self.is_field(v1) and not self.is_field(v2):
                         v1_id = self.schema.get_field_id(v1)
