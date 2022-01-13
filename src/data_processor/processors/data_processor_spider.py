@@ -22,6 +22,7 @@ import src.data_processor.tokenizers as tok
 import src.data_processor.vectorizers as vec
 from src.utils.utils import SEQ2SEQ_PG, BRIDGE
 
+import logging
 RESERVED_TOKEN_TYPE = sql_tokenizer.RESERVED_TOKEN
 
 
@@ -108,7 +109,7 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
     else:
         num_included_nodes = schema_graph.num_nodes
 
-    # Value copy feature extraction
+    # Value copy feature extraction TODO: constant_memory添加picklist及正则匹配得出的部分
     if args.read_picklist:
         constant_memory_features = text_features + value_features
         constant_memory = text_tokens + value_tokens
@@ -122,6 +123,7 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                                                       for x in range(num_included_nodes)]
 
     if not args.leaderboard_submission:
+        error_list = []
         for j, program in enumerate(program_list):
             if isinstance(example, Text2SQLExample):
                 ast, denormalized = get_ast(program, parsed_programs, args.denormalize_sql, schema_graph) # 此处将SQL去除别名，所有列名增加表名
@@ -141,7 +143,6 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                     example.values = extract_values(ast, schema_graph)
                 else:
                     example.values = []
-
                 # Model I. Vanilla pointer-generator output
                 if args.model_id in [SEQ2SEQ_PG]:
                     program_text_ptr_value_ids = vec.vectorize_ptr_out(program_tokens, program_vocab,
@@ -163,7 +164,6 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                         #                      post_process=post_process)
                         query_oov = True
                     ############################
-
                 # Model II. Bridge output
                 if ast:
                     denormalized_ast, _ = denormalize(ast, schema_graph, return_parse_tree=True)
@@ -196,19 +196,22 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                 program_singleton_field_tokens = example.example.program_singleton_field_tokens_list[j]
                 program_singleton_field_token_types = example.example.program_singleton_field_token_types_list[j]
 
-            program_field_ptr_value_ids = vec.vectorize_field_ptr_out(program_singleton_field_tokens,
-                                                                      program_singleton_field_token_types,
-                                                                      program_vocab,
-                                                                      constant_unique_input_ids,
-                                                                      max_memory_size=len(constant_memory_features),
-                                                                      schema=schema_graph,
-                                                                      num_included_nodes=num_included_nodes)
+            try:
+                program_field_ptr_value_ids = vec.vectorize_field_ptr_out(program_singleton_field_tokens,
+                                                                          program_singleton_field_token_types,
+                                                                          program_vocab,
+                                                                          constant_unique_input_ids,
+                                                                          max_memory_size=len(constant_memory_features),
+                                                                          schema=schema_graph,
+                                                                          num_included_nodes=num_included_nodes)
+            except Exception as e:
+                logging.exception(e)
+                program_field_ptr_value_ids = []
             example.program_text_and_field_ptr_value_ids_list.append(program_field_ptr_value_ids)
             if example.gt_table_names_list:
                 table_ids = [schema_graph.get_table_id(table_name) for table_name in example.gt_table_names_list[j]]
                 example.table_ids_list.append(table_ids)
                 assert ([schema_graph.get_table(x).name for x in table_ids] == example.gt_table_names)
-
             # sanity check
             ############################
             #   NL+Schema pointer output contains tokens that does not belong to any of the following categories
@@ -238,7 +241,6 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                                      post_process=post_process,
                                      use_table_aware_te=(args.model_id in [BRIDGE]))
             ############################
-
             # Store the ground truth queries after preprocessing to run a relaxed evaluation or
             # to evaluate with partial queries
             if split == 'dev':
@@ -252,7 +254,6 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
                 else:
                     _p = program
                 example.gt_program_list.append(_p)
-
             # sanity check
             ############################
             # try:
@@ -264,7 +265,10 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
             #     import pdb
             #     pdb.set_trace()
             ############################
-
+                
+        with open('error_log.log', 'a') as f:
+            for ex in error_list:
+                f.write(f'{ex}\n')
         example.run_unit_tests()
 
     return query_oov, denormalized, schema_truncated, token_restored

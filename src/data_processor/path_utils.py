@@ -187,8 +187,8 @@ def get_wandb_tag(args):
 def get_checkpoint_path(args):
     if args.checkpoint_path:
         return args.checkpoint_path
-    # checkpoint_path = os.path.join(args.model_dir, 'model-best.{}.tar'.format(args.beam_size))
-    checkpoint_path = os.path.join(args.model_dir, 'model-best.tar')
+    checkpoint_path = os.path.join(args.model_dir, 'model-best.{}.tar'.format(args.beam_size))
+    # checkpoint_path = os.path.join(args.model_dir, 'model-best.tar')
     try:
         assert(os.path.exists(checkpoint_path))
     except AssertionError:

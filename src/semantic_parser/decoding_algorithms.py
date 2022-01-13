@@ -93,6 +93,10 @@ def beam_search(alpha, model, decoder, decoder_embeddings, num_steps, beam_size,
     digit_s3_id = decoder.vocab.to_idx('##3')
     digit_s4_id = decoder.vocab.to_idx('##4')
     digit_s5_id = decoder.vocab.to_idx('##5')
+    digit_s6_id = decoder.vocab.to_idx('##6')
+    digit_s7_id = decoder.vocab.to_idx('##7')
+    digit_s8_id = decoder.vocab.to_idx('##8')
+    digit_s9_id = decoder.vocab.to_idx('##9')
     seen_eos = ops.byte_zeros_var_cuda([full_size, 1])
     seq_len = 0
 

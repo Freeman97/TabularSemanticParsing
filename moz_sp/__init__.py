@@ -51,8 +51,8 @@ def parse(sql):
             all_exceptions.clear()
             sql = sql.rstrip().rstrip(";")
             # 包含中文的SQL语句需要特殊处理
-            if contains_zh(sql):
-                sql = ' '.join(tokenize_dusql(sql, use_back_quote=True))
+            # if contains_zh(sql):
+            #     sql = ' '.join(tokenize_dusql(sql, use_back_quote=True))
             parse_result = SQLParser.parseString(sql, parseAll=True)
             return _scrub(parse_result)
         except Exception as e:

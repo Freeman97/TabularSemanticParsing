@@ -35,7 +35,7 @@ assert(args.model_id is not None)
 
 def inference(sp):
     text_tokenize, program_tokenize, post_process, table_utils = tok.get_tokenizers(args)
-    schema_graphs = schema_loader.load_schema_graphs_spider(args.codalab_data_dir, 'spider', db_dir=args.codalab_db_dir)
+    schema_graphs = schema_loader.load_schema_graphs_spider(args.codalab_data_dir, args.dataset_name, db_dir=args.codalab_db_dir)
     schema_graphs.lexicalize_graphs(
         tokenize=text_tokenize, normalized=(args.model_id in [utils.BRIDGE]))
     sp.schema_graphs = schema_graphs
@@ -47,21 +47,21 @@ def inference(sp):
         'text': text_vocab,
         'program': program_vocab
     }
-    examples = data_loader.load_data_split_spider(args.codalab_data_dir, 'dev', schema_graphs)
-    print('{} {} examples loaded'.format(len(examples), 'dev'))
+    examples = data_loader.load_data_split_spider(args.codalab_data_dir, 'test', schema_graphs)
+    print('{} {} examples loaded'.format(len(examples), 'test'))
 
     for i, example in enumerate(examples):
         schema_graph = schema_graphs.get_schema(example.db_id)
-        preprocess_example('dev', example, args, None, text_tokenize, program_tokenize, post_process, table_utils,
+        preprocess_example('test', example, args, None, text_tokenize, program_tokenize, post_process, table_utils,
                            schema_graph, vocabs)
-    print('{} {} examples processed'.format(len(examples), 'dev'))
+    print('{} {} examples processed'.format(len(examples), 'test'))
 
     sp.load_checkpoint(get_checkpoint_path(args))
     sp.eval()
 
     out_dict = sp.inference(examples,
                             restore_clause_order=args.process_sql_in_execution_order,
-                            check_schema_consistency_=True,
+                            check_schema_consistency_=False,
                             inline_eval=False,
                             verbose=False)
 

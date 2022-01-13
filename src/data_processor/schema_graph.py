@@ -277,7 +277,7 @@ class SchemaGraph(object):
         return utils.to_indexable(name, self.caseless) in self.table_names
 
     def is_field_name(self, name):
-        if '.' in name:
+        if '.' in name and len(name.split('.')) == 2:
             table_name, column_name = name.split('.')
             if self.is_table_name(table_name) and utils.to_indexable(column_name, self.caseless) in self.field_names:
                 return True

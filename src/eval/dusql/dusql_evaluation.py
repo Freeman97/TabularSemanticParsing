@@ -1428,16 +1428,19 @@ def build_foreign_key_map_from_json(table):
 def evaluate_NL2SQL(pred_str, gold_str, table_dict, db_id):
     return evaluate_NL2SQL_single(pred_str, gold_str, table_dict, db_id)
 
+complex_table_dict = None
 def evaluate_complex_single(pred_str, gold_str, table_file, db_id):
-    with open(table_file, encoding='utf8') as ifs:
-        table_list = json.load(ifs)
-        table_dict = {}
-        for table in table_list:
-            if table['db_id'] in table_dict:
-                continue
-            table_dict[table['db_id']] = table
+    global complex_table_dict
+    if complex_table_dict is None:
+        complex_table_dict = {}
+        with open(table_file, encoding='utf8') as ifs:
+            table_list = json.load(ifs)
+            for table in table_list:
+                if table['db_id'] in complex_table_dict:
+                    continue
+                complex_table_dict[table['db_id']] = table
     evaluator = Evaluator()
-    schema = Schema(table_dict[db_id])
+    schema = Schema(complex_table_dict[db_id])
     gold_str = gold_str.replace('==', '=')
     gold_sql = get_sql(schema, gold_str, single_equal=True)
     kmaps = build_foreign_key_map_from_json(table_file)

@@ -708,7 +708,7 @@ def selective_read(encoder_ptr_value_ids, memory_hiddens, attn_weights, last_out
     :param last_output
     :return:
     """
-    point_mask = (encoder_ptr_value_ids == last_output).float()
+    point_mask = (encoder_ptr_value_ids == last_output).float() # FIXME: 数据出错了怎么生成Padding值
     weights = point_mask * attn_weights.squeeze(1)
     batch_size = memory_hiddens.size(0)
     weight_normalizer = weights.sum(dim=1)

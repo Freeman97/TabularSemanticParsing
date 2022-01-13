@@ -99,7 +99,7 @@ def vectorize_field_ptr_out(tokens, token_types, out_vocab, unique_input_ids, ma
         token_type = token_types[i]
         if token_type in [TABLE, FIELD]:
             schema_pos = schema.get_schema_pos(token)
-            if schema_pos < num_included_nodes:
+            if schema_pos is not None and schema_pos < num_included_nodes:
                 ptr_ids.append(out_vocab.size + max_memory_size + schema_pos)
             else:
                 if token_type == TABLE:

@@ -33,6 +33,8 @@ import src.eval.eval_tools as eval_tools
 import src.eval.spider.evaluate as spider_eval_tools
 from src.eval.wikisql.lib.query import Query
 from src.utils.utils import SEQ2SEQ, SEQ2SEQ_PG, BRIDGE
+import logging
+import torch.nn as nn
 
 
 class EncoderDecoderLFramework(LFramework):
@@ -121,6 +123,7 @@ class EncoderDecoderLFramework(LFramework):
                                                    text_masks, schema_masks, feature_ids, None,
                                                    transformer_output_value_masks, schema_memory_masks)
                 else:
+                    
                     outputs = self.mdl(encoder_ptr_input_ids, encoder_ptr_value_ids,
                                        text_masks, schema_masks, feature_ids,
                                        transformer_output_value_masks=transformer_output_value_masks,
@@ -386,7 +389,6 @@ class EncoderDecoderLFramework(LFramework):
                     else:
                         table_po, field_po = schema_graph.get_schema_perceived_order(
                             tables, random_table_order=False, random_field_order=self.args.random_field_order)
-
                     # Schema feature extraction
                     question_encoding = exp.text if self.args.use_picklist else None
                     schema_features, matched_values = schema_graph.get_serialization(
@@ -415,7 +417,6 @@ class EncoderDecoderLFramework(LFramework):
                     foreign_key_ids.append(schema_graph.get_foreign_key_ids(num_included_nodes, table_po, field_po))
                     field_type_ids.append(schema_graph.get_field_type_ids(num_included_nodes, table_po, field_po))
                     table_masks.append(schema_graph.get_table_masks(num_included_nodes, table_po, field_po))
-
                     # Value copy feature extraction
                     if self.args.read_picklist:
                         constant_memory_features = exp.text_tokens + value_features
@@ -428,6 +429,8 @@ class EncoderDecoderLFramework(LFramework):
                     encoder_ptr_value_ids.append(
                         constant_ptr_value_ids + [self.out_vocab.size + len(constant_memory_features) + x
                                                   for x in range(num_included_nodes)])
+                    # try:
+                    # HACK: 处理出错数据, 提供空数组以便进行padding
                     program_field_ptr_value_ids = \
                         vec.vectorize_field_ptr_out(exp.program_singleton_field_tokens,
                                                     exp.program_singleton_field_token_types,
@@ -435,6 +438,9 @@ class EncoderDecoderLFramework(LFramework):
                                                     max_memory_size=len(constant_memory_features),
                                                     schema=schema_graph,
                                                     num_included_nodes=num_included_nodes)
+                    # except Exception as e:
+                    #     logging.exception(e)
+                    #     program_field_ptr_value_ids = []
                     decoder_ptr_value_ids.append(program_field_ptr_value_ids)
                 else:
                     encoder_ptr_input_ids = [exp.ptr_input_ids for exp in mini_batch]
@@ -451,6 +457,7 @@ class EncoderDecoderLFramework(LFramework):
                     table_field_scopes.append(table_field_scope)
                     if self.args.read_picklist:
                         transformer_output_value_masks.append(exp.transformer_output_value_mask)
+                
 
             encoder_ptr_input_ids = ops.pad_batch(encoder_ptr_input_ids, self.mdl.in_vocab.pad_id)
             encoder_ptr_value_ids = ops.pad_batch(encoder_ptr_value_ids, self.mdl.in_vocab.pad_id)
@@ -458,6 +465,15 @@ class EncoderDecoderLFramework(LFramework):
                 if (self.args.use_pred_tables and not self.training) else (None, None)
             decoder_ptr_value_ids = ops.pad_batch(decoder_ptr_value_ids, self.mdl.out_vocab.pad_id) \
                 if self.training else None
+
+            # if self.training:
+            #     # HACK:把出错数据的decoder_ptr_value_ids pad到与encoder_ptr_value_ids相同的shape
+            #     encoder_decoder_delta = encoder_ptr_value_ids[0].shape[1] - decoder_ptr_value_ids[0].shape[1]
+            #     new_decoder_ptr_value_ids = ()
+            #     new_decoder_ptr_value_ids = nn.functional.pad(decoder_ptr_value_ids[0], pad=(0, encoder_decoder_delta), mode='constant', value=self.mdl.out_vocab.pad_id)
+            #     new_decoder_ptr_value_ids_mask = nn.functional.pad(decoder_ptr_value_ids[1], pad=(0, encoder_decoder_delta), mode='constant', value=True)
+            #     decoder_ptr_value_ids = (new_decoder_ptr_value_ids, new_decoder_ptr_value_ids_mask)
+
             primary_key_ids = ops.pad_batch(primary_key_ids, self.mdl.in_vocab.pad_id)
             foreign_key_ids = ops.pad_batch(foreign_key_ids, self.mdl.in_vocab.pad_id)
             field_type_ids = ops.pad_batch(field_type_ids, self.mdl.in_vocab.pad_id)

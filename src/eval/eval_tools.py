@@ -15,7 +15,7 @@ from src.eval.wikisql.lib.dbengine import DBEngine
 import src.eval.wikisql.evaluate as wikisql_eval_tools
 from src.data_processor.processor_utils import SPIDER
 from src.utils.utils import encode_str_list, list_to_hist
-
+import logging
 import os
 
 def get_exact_set_match_metrics(examples, pred_list, verbose=False, vocabs=None, schema_graphs=None, clauses=None):
@@ -354,7 +354,7 @@ def eval_prediction(pred, gt_list, dataset_id, db_name=None, in_execution_order=
             return eval_func(
                 pred, [(gt, db_name) for gt in gt_list], in_execution_order=in_execution_order, table_file=table_file, db_id=db_name) # TODO: eval代码替换成dusql
         except Exception as e:
-            print(str(e))
+            logging.exception(e)
             return False, 'easy', 0
     elif dataset_id == WIKISQL:
         assert(len(gt_list) == 1)
