@@ -142,7 +142,7 @@ def load_schema_graphs(args):
     Load database schema as a graph.
     """
     dataset_name = args.dataset_name
-    if dataset_name in ['spider', 'spider_ut', 'dusql', 'cspider', 'nl2sql']:
+    if dataset_name in ['spider', 'spider_ut', 'dusql', 'cspider', 'nl2sql', 'cspider-dbg']:
         return load_schema_graphs_spider(args.data_dir, dataset_name, db_dir=args.db_dir,
                                          augment_with_wikisql=args.augment_with_wikisql)
     if dataset_name == 'wikisql':
@@ -182,7 +182,7 @@ def load_schema_graphs_spider(data_dir, dataset_name, db_dir=None, augment_with_
             db_id = db_content['db_id']
             if dataset_name == 'spider':
                 db_path = os.path.join(db_dir, db_id, '{}.sqlite'.format(db_id)) if db_dir else None # TODO: 都不存在sqlite文件，后续需要修改成JSON查找操作
-            elif dataset_name in ['dusql', 'nl2sql', 'cspider']:
+            elif dataset_name in ['dusql', 'nl2sql', 'cspider', 'cspider-dbg']:
                 db_path = db_dir
             else:
                 db_id_parts = db_id.rsplit('_', 1)

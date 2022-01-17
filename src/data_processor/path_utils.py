@@ -155,6 +155,8 @@ def get_tokenizer_tag(args):
         return 'bert.cased.'
     elif 'chinese-roberta' in args.pretrained_transformer:
         return 'chinese-roberta-large'
+    elif 'bert-base-multilingual-cased' in args.pretrained_transformer:
+        return 'bert-base-multilingual-cased'
     elif args.pretrained_transformer.startswith('roberta'):
         return 'roberta.'
     elif args.pretrained_transformer == 'table-bert':

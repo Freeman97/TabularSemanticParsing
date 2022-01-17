@@ -191,6 +191,8 @@ class EncoderDecoderLFramework(LFramework):
                             if not ('dusql' in self.args.db_dir or 'nl2sql' in self.args.db_dir or 'cspider' in self.args.db_dir):
                                 hardness = spider_eval_tools.Evaluator().eval_hardness(
                                     gt_program_ast, db_dir=self.args.db_dir, db_name=example.db_name)
+                            else:
+                                hardness = 'extra'
                         elif example.dataset_id == WIKISQL:
                             gt_program_list = example.program_ast_list_
                         else:

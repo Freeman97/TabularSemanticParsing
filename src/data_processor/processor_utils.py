@@ -74,7 +74,7 @@ def get_transformer_output_value_mask(features, matched_values, tu):
             if x in [tu.table_marker, tu.field_marker, tu.value_marker, tu.sep_token, tu.cls_token, tu.pad_token]:
                 if value:
                     value_features.append(value)
-                    value_tokens.append(utils.restore_feature_case(value, value_strs[len(value_tokens), tu])[0])
+                    value_tokens.append(utils.restore_feature_case(value, value_strs[len(value_tokens)], tu)[0])
                     value = []
                 mask.append(0)
                 if x != tu.value_marker:

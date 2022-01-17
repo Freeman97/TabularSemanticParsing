@@ -19,4 +19,4 @@ def output_postprocess(output_file, test_file, output_name='output.sql'):
         f.writelines(output_list)
 
 if __name__ == '__main__':
-    output_postprocess('bridge_test_dusql.sql', 'data/dusql/test.json')
+    output_postprocess('bridge_dev_dusql.sql', 'data/dusql/dev.json', 'output_dev.sql')

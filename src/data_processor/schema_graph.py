@@ -632,10 +632,12 @@ class SchemaGraph(object):
             field_name = field_node.name
             table_name = field_node.table.name
             if self.db_path.endswith('.json'):
+                field_name = field_node.normalized_name
+                table_name = field_node.table.normalized_name
                 picklist = set()
                 assert self.db_content is not None
                 table_data = self.db_content[table_name]
-                list_index = table_data['header'].index(field_name)
+                list_index = table_data['header'].index(field_name) # FIXME: CSpider 列名
                 value_list = []
                 for row in table_data['cell']:
                     x = row[list_index]

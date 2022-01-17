@@ -37,6 +37,8 @@ def preprocess_example(split, example, args, parsed_programs, text_tokenize, pro
             return utils.restore_feature_case(features, raw_text, tu)
         elif 'chinese-roberta' in args.pretrained_transformer:
             return utils.restore_feature_case(features, raw_text, tu)
+        elif 'bert-base-multilingual-cased' in args.pretrained_transformer:
+            return utils.restore_feature_case(features, raw_text, tu)
         else:
             return features
 

@@ -346,7 +346,7 @@ def eval_prediction(pred, gt_list, dataset_id, db_name=None, in_execution_order=
         table_file = os.path.join(dataset_dir, 'db_schema.json')
     if dataset_id == SPIDER:
         eval_func = spider_eval_tools.evaluate_single_query_with_multiple_ground_truths
-        if dataset_name == 'dusql' or dataset_name == 'cspider':
+        if dataset_name == 'dusql' or 'cspider' in dataset_name:
             eval_func = spider_eval_tools.evaluate_single_dusql_cspider
         elif dataset_name == 'nl2sql':
             eval_func = spider_eval_tools.evaluate_NL2SQL_single
