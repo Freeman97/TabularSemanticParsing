@@ -418,7 +418,8 @@ class LFramework(nn.Module):
             checkpoint = torch.load(input_file)
             self.load_state_dict(checkpoint['model_state_dict'])
             if self.args.train:
-                self.start_step = checkpoint['interval_step_id'] + 1
+                import math
+                self.start_step = math.ceil(checkpoint['interval_step_id']) + 1
                 if 'optimizer_state_dict' in checkpoint:
                     self.optim.load_state_dict(checkpoint['optimizer_state_dict'])
                 if 'lr_scheduler_dict' in checkpoint:

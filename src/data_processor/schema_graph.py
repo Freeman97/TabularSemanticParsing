@@ -27,7 +27,7 @@ from src.data_processor.sql.sql_operators import field_types
 from src.data_processor.vocab_utils import Vocabulary
 from src.utils.utils import deprecated
 import src.utils.utils as utils
-
+import logging
 
 TABLE = 0
 FIELD = 1
@@ -637,11 +637,14 @@ class SchemaGraph(object):
                 picklist = set()
                 assert self.db_content is not None
                 table_data = self.db_content[table_name]
-                list_index = table_data['header'].index(field_name) # FIXME: CSpider 列名
-                value_list = []
-                for row in table_data['cell']:
-                    x = row[list_index]
-                    picklist.add(x)
+                try:
+                    list_index = table_data['header'].index(field_name) # FIXME: CSpider 列名
+                    value_list = []
+                    for row in table_data['cell']:
+                        x = row[list_index]
+                        picklist.add(x)
+                except Exception as e:
+                    logging.exception(e)
             else:
                 fetch_sql = 'SELECT `{}` FROM `{}`'.format(field_name, table_name) # TODO: 修改为JSON查找
                 conn = sqlite3.connect(self.db_path)
