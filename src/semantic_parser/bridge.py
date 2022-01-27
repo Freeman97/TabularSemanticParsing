@@ -225,7 +225,7 @@ class SchemaAwareTransformerEncoder(nn.Module):
         :param return_separate_hiddens: If set, return separate text and schema hiddens also.
         """
         if self.use_lstm_encoder:
-            encoder_base_hiddens, _ = self.bilstm_encoder(inputs_embedded, input_masks)
+            encoder_base_hiddens, _ = self.bilstm_encoder(inputs_embedded, input_masks) # 整体过一遍BILSTM
         else:
             encoder_base_hiddens = inputs_embedded
 
@@ -237,7 +237,7 @@ class SchemaAwareTransformerEncoder(nn.Module):
         # [batch_size, text_size, hidden_size]
         text_embedded = encoder_base_hiddens[:, text_start_offset:text_masks.size(1) + text_start_offset, :]
         if self.use_lstm_encoder:
-            text_hiddens, hidden = self.text_encoder(text_embedded, text_masks)
+            text_hiddens, hidden = self.text_encoder(text_embedded, text_masks) # 问题部分单独LSTM
         else:
             text_hiddens = text_embedded
             hidden = torch.split(self.hidden_proj(text_hiddens[:, -1, :]).unsqueeze(0), self.decoder_hidden_dim, dim=2)

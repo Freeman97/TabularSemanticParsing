@@ -297,6 +297,8 @@ def evaluate_NL2SQL_single(pred_str, gold_str, table_dict, db_id):
     db = table_dict[db_id]
     assert db is not None
 
+    gold_str = gold_str.replace('`', '')
+    pred_str = pred_str.replace('`', '')
     right = total = 0
     cnt_sel = 0
     cnt_count = cnt_conn = 0

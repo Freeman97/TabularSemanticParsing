@@ -349,7 +349,7 @@ def eval_prediction(pred, gt_list, dataset_id, db_name=None, in_execution_order=
         if dataset_name == 'dusql' or 'cspider' in dataset_name:
             eval_func = spider_eval_tools.evaluate_single_dusql_cspider
         elif dataset_name == 'nl2sql':
-            eval_func = spider_eval_tools.evaluate_NL2SQL_single
+            eval_func = spider_eval_tools.evaluate_single_NL2SQL
         try:
             return eval_func(
                 pred, [(gt, db_name) for gt in gt_list], in_execution_order=in_execution_order, table_file=table_file, db_id=db_name) # TODO: eval代码替换成dusql

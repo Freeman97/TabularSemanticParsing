@@ -645,6 +645,7 @@ def evaluate_single_dusql_cspider(p, g_list, hardness=None, evaluator=None, scor
 
 table_dict = None
 def evaluate_single_NL2SQL(p, g_list, hardness=None, evaluator=None, scores=None, in_execution_order=False, verbose=False, table_file=None, db_id=None):
+    global table_dict
     if table_dict is None:
         with open(table_file, 'r', encoding='utf8') as f:
             table_list = json.load(f)
@@ -653,7 +654,7 @@ def evaluate_single_NL2SQL(p, g_list, hardness=None, evaluator=None, scores=None
                 table_dict[t['db_id']] = t
     
     for g in g_list:
-        results = evaluate_NL2SQL_single(p, g[0], table_file, db_id) # TODO: 尝试计算其它EVAL指标，hardness和table_err(有一定困难)
+        results = evaluate_NL2SQL_single(p, g[0], table_dict, db_id) # TODO: 尝试计算其它EVAL指标，hardness和table_err(有一定困难)
         if results == 1:
             return True, 'extra', 0
     return False, 'easy', 0

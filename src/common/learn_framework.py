@@ -204,7 +204,7 @@ class LFramework(nn.Module):
                     mini_batch += train_data_augment[augment_example_id:augment_batch_end]
                     augment_example_id = augment_batch_end
 
-                formatted_batch = self.format_batch(mini_batch)
+                formatted_batch = self.format_batch(mini_batch) # TODO: Check formatted_batch[3]
                 loss = self.loss(formatted_batch)
                 loss.backward()
                 epoch_losses.append(float(loss) * self.num_accumulation_steps)
