@@ -88,7 +88,7 @@ def get_transformer_output_value_mask(features, matched_values, tu):
             mask.append(0)
     # Notes: no need to check for additional values here as the input is guaranteed to end with '[SEP]'
     assert(len(value) == 0)
-    assert(len(value_tokens) == len(matched_values))
+    # assert(len(value_tokens) == len(matched_values))
     #     print('Warning: not all matched values included in schema encoding')
     if value_features:
         value_features = reduce(lambda x, y: x + y, value_features)

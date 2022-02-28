@@ -108,11 +108,11 @@ def generate_query_toks_nl2sql(file_name):
         json.dump(data_list, f, ensure_ascii=False)
 
 if __name__ == '__main__':
-    generate_query_toks_nl2sql('data/nl2sql/train.json')
-    generate_query_toks_nl2sql('data/nl2sql/dev.json')
-    fix_query('data/nl2sql/', 'train.json')
-    fix_query('data/nl2sql/', 'dev.json')
+    # generate_query_toks_nl2sql('data/nl2sql/train.json')
+    # generate_query_toks_nl2sql('data/nl2sql/dev.json')
+    # fix_query('data/nl2sql/', 'train.json')
+    # fix_query('data/nl2sql/', 'dev.json')
     # generate_complex_sql_json('data/nl2sql/train.json', 'data/nl2sql/db_schema.json')
     # generate_complex_sql_json('data/nl2sql/dev.json', 'data/nl2sql/db_schema.json')
-    # examine_schema()
-    # column_name_preprocess()
+    examine_schema()
+    column_name_preprocess()

@@ -48,7 +48,7 @@ def get_effecitve_match_source(s, start, end):
     _start = -1
 
     for i in range(start, start - 2, -1):
-        if i < 0:
+        if i < 0: # 向前搜索
             _start = i + 1
             break
         if is_span_separator(s[i]):
@@ -56,7 +56,9 @@ def get_effecitve_match_source(s, start, end):
             break
 
     if _start < 0:
-        return None
+        # 中文不要找span separator!
+        # return None
+        _start = start
 
     _end = -1
     for i in range(end - 1, end + 3):
@@ -68,7 +70,8 @@ def get_effecitve_match_source(s, start, end):
             break
 
     if _end < 0:
-        return None
+        # return None
+        _end = end
 
     while(_start < len(s) and is_span_separator(s[_start])):
         _start += 1
