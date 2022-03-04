@@ -21,17 +21,20 @@ def fix_query(data_path, file_name, new_file_name=None):
         data_list = json.load(f)
 
     for data in data_list:
-        if 'FROM' not in data['query'] or 'from' not in data['query']:
+        if 'FROM' not in data['query'] and 'from' not in data['query']:
             query = data['query']
             # query_for_parse = data['query_for_parse']
             # 人工添加统一的FROM子句，构成完整的SQL
             left, right = query.split('WHERE')
             # left_for_parse, right_for_parse = query_for_parse.split('WHERE')
-            table_str = 'table_' + data['db_id']
-            new_query = f"{left}FROM {table_str} WHERE{right}"
+            # table_str = 'table_' + data['db_id']
+            table_str = 'table'
+            new_query = f"{left}from {table_str} WHERE{right}"
             # new_query_for_parse = f"{left_for_parse}FROM {table_str} WHERE{right_for_parse}"
             data['query'] = new_query
             # data['query_for_parse'] = new_query_for_parse
+        elif 'table_' + data['db_id'] in data['query']:
+            data['query'] = data['query'].replace('table_' + data['db_id'], 'table')
     
     with open(data_path + file_name, 'w') as f:
         json.dump(data_list, f, ensure_ascii=False)
@@ -107,12 +110,39 @@ def generate_query_toks_nl2sql(file_name):
     with open(file_name, 'w') as f:
         json.dump(data_list, f, ensure_ascii=False)
 
+def replace_table_name(db_content: str, db_schema: str):
+    with open(db_content, 'r') as f:
+        contents = json.load(f)
+    
+    for unit in contents:
+        # print(unit)
+        table_name = [x for x in unit['tables'].keys()][0]
+        new_table_name = 'table'
+        content = unit['tables'][table_name]
+        content['table_name'] = new_table_name
+        unit['tables'] = {new_table_name: content}
+    
+    with open(db_content, 'w') as f:
+        json.dump(contents, f, ensure_ascii=False)
+
+    with open(db_schema, 'r') as f:
+        schemas = json.load(f)
+
+    for unit in schemas:
+        unit['table_names'] = ['table']
+        unit['table_names_original'] = ['table']
+    
+    with open(db_schema, 'w') as f:
+        json.dump(schemas, f, ensure_ascii=False)
+
+
 if __name__ == '__main__':
     # generate_query_toks_nl2sql('data/nl2sql/train.json')
     # generate_query_toks_nl2sql('data/nl2sql/dev.json')
     # fix_query('data/nl2sql/', 'train.json')
     # fix_query('data/nl2sql/', 'dev.json')
+    # replace_table_name('data/nl2sql/db_content.json', 'data/nl2sql/db_schema.json')
     # generate_complex_sql_json('data/nl2sql/train.json', 'data/nl2sql/db_schema.json')
     # generate_complex_sql_json('data/nl2sql/dev.json', 'data/nl2sql/db_schema.json')
-    examine_schema()
+    # examine_schema()
     column_name_preprocess()
