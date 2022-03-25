@@ -35,7 +35,7 @@ from src.eval.wikisql.lib.query import Query
 from src.utils.utils import SEQ2SEQ, SEQ2SEQ_PG, BRIDGE
 import logging
 import torch.nn as nn
-
+from src.utils.generate_query_toks import tokenize_dusql
 
 class EncoderDecoderLFramework(LFramework):
 
@@ -229,6 +229,7 @@ class EncoderDecoderLFramework(LFramework):
                                     pred_sql = restored_pred
                                 else:
                                     if check_schema_consistency_:
+                                        sql_for_check = " ".join(tokenize_dusql(pred_sql))
                                         if not moz_sp.check_schema_consistency(
                                                 pred_sql, schema, in_execution_order=self.args.process_sql_in_execution_order):
                                             pred_sql = None

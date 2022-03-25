@@ -22,12 +22,206 @@ import src.data_processor.tokenizers as tok
 import src.data_processor.vectorizers as vec
 from src.utils.utils import SEQ2SEQ_PG, BRIDGE
 
+import cn2an
+from decimal import *
+import re
+
 import logging
 RESERVED_TOKEN_TYPE = sql_tokenizer.RESERVED_TOKEN
 
 
+def date_regularize(question: str) -> str:
+    pattern1 = re.compile(r'\d{2,4}年\d{1,2}月\d{1,2}日')
+    pattern2 = re.compile(r'\d{2,4}年\d{1,2}月\d{1,2}号')
+    pattern3 = re.compile(r'\d{2,4}年\d{1,2}月\d{1,2}')
+    pattern4 = re.compile(r'\d{2,4}\.\d{1,2}\.\d{1,2}')
+    pattern5 = re.compile(r'\d{2,4}年\d{1,2}月')
+    pattern6 = re.compile(r'\d{4}-\d{2}')
+    pattern7 = re.compile(r'\d{4}\.\d{2}')
+    digits_pattern = re.compile(r'\d{1,4}')
+    patterns = [
+        pattern1, pattern2, pattern3, pattern4, pattern5, pattern6, pattern7
+    ]
+    for pattern in patterns:
+        dates = pattern.findall(question)
+        for date in dates:
+            digits = digits_pattern.findall(date)
+            for idx in range(len(digits)):
+                if len(digits[idx]) <= 1:
+                    digits[idx] = '0' + digits[idx]
+                elif idx == 0 and len(digits[idx]) == 2:
+                    # 补齐4位年份
+                    try:
+                        if int(digits[idx]) > 50:
+                            digits[idx] = '19' + digits[idx]
+                        else:
+                            digits[idx] = '20' + digits[idx]
+                    except Exception as e:
+                        # 吞掉错误
+                        logging.debug(e)
+                        continue
+            date_str = '-'.join(digits)
+            question = question.replace(date, date_str)
+    return question
+# 对百分数进行规范化处理
+def percentage_regularize(question: str, dataset_path='dusql') -> str:
+    pattern1 = re.compile(r'[0-9.]+%')
+    # TODO: handle pattern2
+    # pattern2 = re.compile(r'百分之[0-9点]+')
+    percentage_list = pattern1.findall(question)
+    for percentage in percentage_list:
+        digits = percentage[0:-1]
+        try:
+            number = Decimal(digits)
+            if 'nl2sql' not in dataset_path:
+                number = number / 100
+            if isinstance(number, float) and number.is_integer():
+                number = str(number).split('.')[0]
+            else:
+                number = str(number)
+        except Exception as e:
+            logging.exception(f'error occured while handling percentage of question: {question}')
+            continue
+        question = question.replace(percentage, number)
+    pattern2 = re.compile(r'百分之[0-9零一二两三四五六七八九十百千万亿１２３４５６７８９０〇\.点]+')
+    chinese_percentage_list = pattern2.findall(question)
+    for percentage in chinese_percentage_list:
+        digits = percentage[3:]
+        if digits == '百':
+            number = 100
+        else:
+            try:
+                number = cn2an.cn2an(digits, 'smart')
+                if isinstance(number, float) and number.is_integer():
+                    number = str(number).split('.')[0]
+                else:
+                    number = str(number)
+                number = Decimal(number) # 精度问题
+                if 'nl2sql' not in dataset_path:
+                    number = number / 100
+            except Exception as e:
+                logging.exception(f'error occured while handling percentage of question: {question}')
+                continue
+        question = question.replace(percentage, str(number))
+    return question
+
+
+def extract_date(question: str, dataset_path='dusql') -> list:
+    # 暂时只进行年份的额外抽取
+    year_pattern = re.compile(r'[零一二三四五六七八九]{0,2}[零一二三四五六七八九0-9]{2}年')
+    num_dict = {
+        '零': '0',
+        '一': '1',
+        '二': '2',
+        '三': '3',
+        '四': '4',
+        '五': '5',
+        '六': '6',
+        '七': '7',
+        '八': '8',
+        '九': '9',
+        '0': '0',
+        '1': '1',
+        '2': '2',
+        '3': '3',
+        '4': '4',
+        '5': '5',
+        '6': '6',
+        '7': '7',
+        '8': '8',
+        '9': '9'
+    }
+    year_list = year_pattern.findall(question)
+    result_list = []
+    for year in year_list:
+        year = year[:-1]
+        new_year_list = []
+        for _i, _char in enumerate(year):
+            if _char in num_dict:
+                new_year_list.append(num_dict[_char])
+        year = ''.join(new_year_list)
+        if len(year) == 2:
+            year = '20' + year
+        if year not in result_list:
+            result_list.append(year)
+        if 'nl2sql' in dataset_path and (year + '年') not in result_list:
+            result_list.append(year + '年')
+    return result_list
+# 提取数字的规范化表示
+def extract_regularized_numeral(question: str, dataset_path='dusql') -> list:
+    # 兼容汉字和数字混写的部分
+    numeral_pattern = re.compile(r'[负0-9零一二两三四五六七八九十百千万亿１２３４５６７８９０〇\.点]+')
+    chinese_numeral_pattern = re.compile(r'[负零一二两三四五六七八九十百千万亿１２３４５６７８９０〇点]')
+    mixed_numeral_pattern = re.compile(r'[负零一二两三四五六七八九１２３４５６７８９０〇点0-9]')
+    chinese_numeral_pattern_unit = {
+        '万': 10000, '十万': 100000, '百万': 1000000, '千万': 10000000, '亿': 100000000, 
+        '十亿': 1000000000, '百亿': 10000000000, '千亿': 100000000000, '万亿': 1000000000000}
+    minus_numeral_patterns = ['为负', '负值', '负数', '负增长']
+    unit_dict = {
+        '公里': 1000,
+        '平方公里': 1000000
+    }
+    numeral_list = numeral_pattern.findall(question)
+    result_list = []
+    for numeral in numeral_list:
+        num = 0
+        temp_list = []
+        try:
+            num = cn2an.cn2an(numeral, 'smart')
+            # 判断 公里 / 平方公里 等单位
+            numeral_index = question.find(numeral)
+            for unit, value in unit_dict.items():
+                try:
+                    if unit == question[numeral_index + len(numeral) : numeral_index + len(numeral) + len(unit)]:
+                        new_num = num * value
+                        if isinstance(new_num, float) and new_num.is_integer():
+                            new_num = str(new_num).split('.')[0]
+                        else:
+                            new_num = str(new_num)
+                        result_list.append(new_num)
+                except:
+                    continue
+            # 判断是否为整数
+            if isinstance(num, float) and num.is_integer():
+                num = str(num).split('.')[0]
+            else:
+                if 'nl2sql' in dataset_path:
+                    for pattern_unit, number in chinese_numeral_pattern_unit.items():
+                        if pattern_unit in numeral:
+                            temp = num / number
+                            if isinstance(temp, float) and temp.is_integer():
+                                temp = str(temp).split('.')[0]
+                            else:
+                                temp = str(temp)
+                            result_list.append(temp)
+                num = str(num)
+        
+            if numeral in chinese_numeral_pattern_unit and len(mixed_numeral_pattern.findall(numeral)) <= 0:
+                if str(chinese_numeral_pattern_unit[numeral]) not in result_list:
+                    result_list.append(str(chinese_numeral_pattern_unit[numeral]))
+        except Exception as e:
+            logging.exception(e)
+            continue
+        if len(chinese_numeral_pattern.findall(numeral)) > 0:
+            result_list.append(num)
+        
+        for minus_pattern in minus_numeral_patterns:
+            if minus_pattern in question:
+                result_list.append('0')
+    return result_list
+
+
 def preprocess_example(split, example, args, parsed_programs, text_tokenize, program_tokenize,
                        post_process, trans_utils, schema_graph, vocabs, verbose=False):
+    example.text = date_regularize(example.text)
+    example.text = percentage_regularize(example.text, dataset_path=args.data_dir)
+    number_list = extract_regularized_numeral(example.text, dataset_path=args.data_dir)
+    year_list = extract_date(example.text, dataset_path=args.data_dir)
+    value_list = number_list + year_list
+    # 实验: 抽取数字值
+    for val in value_list:
+        example.text = example.text + ', ' + val
+
     tu = trans_utils
     text_vocab = vocabs['text']
     program_vocab = vocabs['program']
