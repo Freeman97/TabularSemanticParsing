@@ -217,7 +217,7 @@ class EncoderDecoderLFramework(LFramework):
                                         restored_pred, grammatical, schema_consistent = moz_sp.restore_clause_order(
                                             pred_sql, schema, check_schema_consistency_=check_schema_consistency_,
                                             verbose=verbose)
-                                        if pred_restored_cache and check_schema_consistency_:
+                                        if pred_restored_cache is not None and check_schema_consistency_:
                                             # TODO: we don't cache the results when check_schema_consistency_ is off to
                                             # avoid logging false negatives
                                             if db_name not in pred_restored_cache:

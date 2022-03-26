@@ -112,10 +112,11 @@ def get_matched_entries(s, field_values, m_theta=0.85, s_theta=0.85):
                     if c_source_match_str.endswith(c_match_str + '\'s'):
                         match_score = 1.0
                     else:
-                        if prefix_match(c_field_value, c_source_match_str):
-                            match_score = fuzz.ratio(c_field_value, c_source_match_str) / 100
-                        else:
-                            match_score = 0
+                        # if prefix_match(c_field_value, c_source_match_str):
+                        #     match_score = fuzz.ratio(c_field_value, c_source_match_str) / 100
+                        # else:
+                        #     match_score = 0
+                        match_score = fuzz.ratio(c_field_value, c_source_match_str) / 100
                     if (utils.is_commonword(c_match_str) or utils.is_commonword(c_source_match_str) or
                             utils.is_commonword(c_field_value)) and match_score < 1:
                         continue

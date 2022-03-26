@@ -176,6 +176,7 @@ def convert_to_execution_order(sql, schema):
 
 def restore_clause_order(sql, schema, check_schema_consistency_=True, verbose=False):
     try:
+        sql = " ".join(tokenize_dusql(sql, use_back_quote=True))
         eo_ast = eo_parse(sql)
         if check_schema_consistency_:
             schema_consist = check_schema_consistency(eo_ast, schema, verbose=verbose)
